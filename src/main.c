@@ -61,16 +61,16 @@ int main(void)
 				if (size)
 				{
 
-				if (FIRST_TIME)
-				{
-					FIRST_TIME = 0 ;
-					execute_flash_erase(2,2);
-				}
+					if (FIRST_TIME)
+					{
+						FIRST_TIME = 0 ;
+						execute_flash_erase(2,2);
+					}
 
-				if (bootloader_handle_mem_write_cmd(arr,size))
-				{
-					WIFI_LOCAL_SEND_DATA("DONE");
-				}
+					if (bootloader_handle_mem_write_cmd(arr,size))
+					{
+						WIFI_LOCAL_SEND_DATA("DONE");
+					}
 				}
 
 			}
@@ -80,5 +80,5 @@ int main(void)
 
 }
 
-
+/* shkhakh  */
 

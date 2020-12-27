@@ -11,7 +11,7 @@
 #include "WIFI_LOCAL.h"
 
 #include "../Services_layers/debug.h"
-
+#include "../Services_layers/Services_layers.h"
 
 void WIFI_LOCAL_INIT (void)
 {
@@ -25,6 +25,8 @@ void WIFI_LOCAL_INIT (void)
  	WIFI_LOCAL_SEND((unsigned char *)"AT+CWMODE_DEF=1\r\n",strlen("AT+CWMODE_DEF=1\r\n"));
  	_delay_ms(100);
 	WIFI_LOCAL_SEND((unsigned char *)STATIC_IP  , strlen(STATIC_IP));
+	_delay_ms(100);
+	WIFI_LOCAL_SEND((unsigned char *)"AT+CWAUTOCON=0\r\n"  , strlen("AT+CWAUTOCON=0\r\n"));
 	_delay_ms(100);
 
 
@@ -41,7 +43,7 @@ void WIFI_START_SERVER(void)
 
 }
 
-void WIFI_LOCAL_JAP (void)
+uint8_t WIFI_LOCAL_JAP (void)
 {
 
 	WIFI_LOCAL_FLUSH();
@@ -50,18 +52,19 @@ void WIFI_LOCAL_JAP (void)
 	int size = sprintf((char*)arr , "AT+CWJAP=\"%s\",\"%s\"\r\n","amr","amr00747");
 
  	WIFI_LOCAL_SEND(arr , size);
+ return	WIFI_WAIT_RESPONSE(2,"WIFI GOT IP","OK");
 
 }
-void WIFI_LOCAL_TCP_START (void)
-{
-	unsigned char arr[80];
-	int size ;
-	memset(arr , 0 , sizeof(arr));
-//	size = sprintf((char*)arr , "AT+CIPSTART=\"TCP\",\"%s\",%d,7200\r\n" , "192.168.55.1" ,80);
-//	size = sprintf((char*)arr , "AT+CIPSTART=\"TCP\",\"%s\",%d,7200\r\n" , "192.168.1.5" ,80);
-
-	WIFI_LOCAL_SEND(arr , size);
-}
+//void WIFI_LOCAL_TCP_START (void)
+//{
+//	unsigned char arr[80];
+//	int size ;
+//	memset(arr , 0 , sizeof(arr));
+////	size = sprintf((char*)arr , "AT+CIPSTART=\"TCP\",\"%s\",%d,7200\r\n" , "192.168.55.1" ,80);
+////	size = sprintf((char*)arr , "AT+CIPSTART=\"TCP\",\"%s\",%d,7200\r\n" , "192.168.1.5" ,80);
+//
+//	WIFI_LOCAL_SEND(arr , size);
+//}
 
 void WIFI_LOCAL_RESET (void)
 {
@@ -101,21 +104,21 @@ void WIFI_LOCAL_SEND_IP (unsigned char *data,int size)
 	WIFI_LOCAL_FLUSH();
 	unsigned char arr[30];
 	memset(arr , 0 , sizeof(arr));
-	int size1 =  sprintf((char*)arr, "AT+CIPSEND=%d\r\n", size);
+	int size1 =  sprintf((char*)arr, "AT+CIPSEND=0,%d\r\n", size);
 	WIFI_LOCAL_SEND(arr,size1);
 	_delay_ms(100);
 	WIFI_LOCAL_SEND(data,size);
 }
-void WIFI_LOCAL_SEND_DATA (unsigned char *data,int size)
-{
-	unsigned char arr[30];
-	memset(arr , 0 , sizeof(arr));
-	int size1 =  sprintf((char*)arr, "AT+CIPSEND=%d\r\n", size);
-	WIFI_LOCAL_SEND(arr,size1);
-	_delay_ms(100);
-	WIFI_LOCAL_SEND(data,size);
-
-}
+//void WIFI_LOCAL_SEND_DATA (unsigned char *data,int size)
+//{
+//	unsigned char arr[30];
+//	memset(arr , 0 , sizeof(arr));
+//	int size1 =  sprintf((char*)arr, "AT+CIPSEND=%d\r\n", size);
+//	WIFI_LOCAL_SEND(arr,size1);
+//	_delay_ms(100);
+//	WIFI_LOCAL_SEND(data,size);
+//
+//}
 void WIFI_LOCAL_SEND (unsigned char *DATA, int size)
 {
 	UART_Write_Array(USART1,DATA,size);
@@ -129,3 +132,42 @@ int WIFI_LOCAL_RAED (unsigned char*data)
 {
 	return SpecialUart_wifi_local_array(data);
 }
+
+
+
+
+uint8_t WIFI_WAIT_RESPONSE( uint8_t response_number , char * data ,...)
+{
+	uint8_t response_check = 0 ;
+	uint8_t arr_response[80] = {0} ;
+	SpecialTimer_Start(WIFI_ATCOMMANDER_TIMEOUT);
+
+	while (!SpecialTimer_Check(WIFI_ATCOMMANDER_TIMEOUT,10000))
+	{
+		 	WIFI_LOCAL_RAED(arr_response);
+
+		if (!memcmp((char *)arr_response,(char *)*((&data)+response_check),strlen((char *)*((&data)+response_check))))
+		{
+			response_check++;
+			if (response_check == response_number)
+			{
+				SpecialTimer_Stop(WIFI_ATCOMMANDER_TIMEOUT);
+				SpecialTimer_Reset(WIFI_ATCOMMANDER_TIMEOUT);
+				return true ;
+			}
+		}
+		else if (!memcmp((char *)arr_response,"ERROR",strlen("ERROR")))
+		{
+			SpecialTimer_Stop(WIFI_ATCOMMANDER_TIMEOUT);
+			SpecialTimer_Reset(WIFI_ATCOMMANDER_TIMEOUT);
+			_delay_ms(500);
+			return false ;
+		}
+
+	}
+	SpecialTimer_Stop(WIFI_ATCOMMANDER_TIMEOUT);
+	SpecialTimer_Reset(WIFI_ATCOMMANDER_TIMEOUT);
+
+	return false ;
+}
+

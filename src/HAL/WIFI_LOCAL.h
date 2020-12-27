@@ -11,9 +11,9 @@
 
 #define   STATIC_IP  "AT+CIPSTA_DEF=\"192.168.1.160\",\"192.168.1.1\",\"255.255.255.0\"\r\n"
 
-
+uint8_t WIFI_WAIT_RESPONSE( uint8_t response_number , char * data ,...);
 void WIFI_LOCAL_INIT (void);
-void WIFI_LOCAL_JAP (void);
+uint8_t WIFI_LOCAL_JAP (void);
 void WIFI_LOCAL_TCP_START (void);
 void WIFI_LOCAL_RESET (void);
 void WIFI_LOCAL_TCP_CLOSE (void);

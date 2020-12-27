@@ -42,7 +42,8 @@ src/HAL/WIFI_lOCAL.o: ../src/HAL/WIFI_lOCAL.c ../src/HAL/../MCAL/UART.h \
  ../src/HAL/../Services_layers/Speical_Timer.h \
  ../src/HAL/../Services_layers/delay.h \
  ../src/HAL/../Services_layers/utility.h ../src/HAL/WIFI_LOCAL.h \
- ../src/HAL/../Services_layers/debug.h
+ ../src/HAL/../Services_layers/debug.h \
+ ../src/HAL/../Services_layers/Services_layers.h
 
 ../src/HAL/../MCAL/UART.h:
 
@@ -135,3 +136,5 @@ C:/Users/amd/workbench/work/BOOT___LOADER4/StdPeriph_Driver/inc/stm32f4xx_cec.h:
 ../src/HAL/WIFI_LOCAL.h:
 
 ../src/HAL/../Services_layers/debug.h:
+
+../src/HAL/../Services_layers/Services_layers.h:

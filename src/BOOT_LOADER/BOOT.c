@@ -25,6 +25,7 @@ void BootLoader_Init (void)
 {
 
 
+
 }
 
 
@@ -240,7 +241,7 @@ void bootloader_handle_flash_erase_cmd(uint8_t *pBuffer)
 }
 
 
-void bootloader_handle_mem_write_cmd(uint8_t *pBuffer)
+uint8_t bootloader_handle_mem_write_cmd(uint8_t *pBuffer, uint16_t size )
 {
 
 	uint8_t write_status = 0x00;

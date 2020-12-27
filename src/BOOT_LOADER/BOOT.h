@@ -40,7 +40,7 @@ uint8_t BootLoader_CheckNewAppCAN(void);
 int BOOT_IsCommandAvailble (void);
 void BOOT_READ_ARRAY (unsigned char* arr, int size);
  void bootloader_handle_flash_erase_cmd(uint8_t *pBuffer);
-void bootloader_handle_mem_write_cmd(uint8_t *pBuffer);
+ uint8_t bootloader_handle_mem_write_cmd(uint8_t *pBuffer, uint16_t size ) ;
 
 void bootloader_send_ack(uint8_t command_code, uint8_t follow_len);
 void bootloader_send_nack(void);

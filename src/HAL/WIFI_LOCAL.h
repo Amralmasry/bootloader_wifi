@@ -24,5 +24,5 @@ void WIFI_LOCAL_SEND (unsigned char *DATA, int size);
 int WIFI_LOCAL_QUEUE_GET_SIZE (void);
 int WIFI_LOCAL_RAED (unsigned char*data);
 void WIFI_LOCAL_SEND_DATA (unsigned char *data,int size);
-
+uint8_t WIFI_WAIT_RESPONSE( uint8_t response_number , char * data ,...);
 #endif /* HAL_WIFI_MQTT_H_ */

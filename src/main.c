@@ -11,6 +11,8 @@
 int main(void)
 {
 
+	uint8_t arr [80] ;
+	uint8_t flag = 0 ;
 
 
 	RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;
@@ -18,24 +20,28 @@ int main(void)
 	debug_write("***********************************\n");
 	debug_write("Boot Loader check for host\n");
 	BootLoader_Init();
+	/**/
+	// Wifi_init
+	// Wifi join access point
+	// Wifi join server
 
 
-	RCC->AHB1ENR |=  4;                 /* enable GPIOC clock */
-
-	GPIOC->MODER &= ~0x0C000000;        /* clear pin mode to input mode */
-	uint8_t RC = 0 ;
-	if (GPIOC->IDR & 0x2000)
+	WIFI_LOCAL_SEND_DATA("BOOTLOADER?");
+	if (WIFI_WAIT_RESPONSE(1,"YES"))
 	{
-		RC = BootLoader_CheckNewAppCAN();
- 	}
-	else
-	{
-		RC=BootLoader_CheckNewAppBUTTON();
-
+		flag=1 ;
 	}
+
+	else
+		flag = 0 ;
+
+
+
+
+
 	while(1)
 	{
-		if (!RC)
+		if (!flag)
 		{
 
 			bootloader_jump_to_user_app();
@@ -45,66 +51,33 @@ int main(void)
 
 			uint8_t FIRST_TIME = 1 ;
 
-			uint8_t rcv_len=0;
-			debug_write("***********************************\n");
-			debug_write("boot command wait \n");
+
 
 			while(1)
 			{
 
-				if (BOOT_IsCommandAvailble())
-				{
-					SpecialTimer_Start(BOOT_REV_TIMEOUT);
-				}
+				uint16_t size  = SpecialUart_wifi_local_array_DATA_ONLY (arr) ;
 
-				if ( SpecialTimer_Check(BOOT_LOADER_COMMAND_TIMEOUT,2000))
-				{
-					SpecialTimer_Stop(BOOT_LOADER_COMMAND_TIMEOUT);
-					SpecialTimer_Reset(BOOT_LOADER_COMMAND_TIMEOUT);
-
-					bootloader_jump_to_user_app();
-				}
-				if (BOOT_IsCommandAvailble() && SpecialTimer_Check(BOOT_REV_TIMEOUT,5))
+				if (size)
 				{
 
-					SpecialTimer_Start(BOOT_LOADER_COMMAND_TIMEOUT);
-					SpecialTimer_Reset(BOOT_LOADER_COMMAND_TIMEOUT);
-
-
-					SpecialTimer_Stop(BOOT_REV_TIMEOUT);
-					SpecialTimer_Reset(BOOT_REV_TIMEOUT);
-
-					BOOT_READ_ARRAY(BOOTLOADER_RX_BUFFER,1);
-					debug_write("***********************************\n");
-					debug_write("took command  \n");
-
-					rcv_len= BOOTLOADER_RX_BUFFER[0];
-
-
-					BOOT_READ_ARRAY(&BOOTLOADER_RX_BUFFER[1],rcv_len);
-					switch(BOOTLOADER_RX_BUFFER[1])
-					{
-					case BL_FLASH_ERASE:
-						bootloader_handle_flash_erase_cmd(BOOTLOADER_RX_BUFFER);
-						break;
-					case BL_MEM_WRITE:
-						if (FIRST_TIME)
-						{
-							FIRST_TIME = 0 ;
-							execute_flash_erase(2,2);
-						}
-						bootloader_handle_mem_write_cmd(BOOTLOADER_RX_BUFFER);
-						break;
-
-					default:
-						debug_write("Invalid command code received from host \n");
-						break;
-					}
+				if (FIRST_TIME)
+				{
+					FIRST_TIME = 0 ;
+					execute_flash_erase(2,2);
 				}
+
+				if (bootloader_handle_mem_write_cmd(arr,size))
+				{
+					WIFI_LOCAL_SEND_DATA("DONE");
+				}
+				}
+
 			}
-
 		}
+
 	}
+
 }
 
 

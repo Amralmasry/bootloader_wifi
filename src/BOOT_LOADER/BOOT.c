@@ -28,32 +28,6 @@ void BootLoader_Init (void)
 
 }
 
-
-uint8_t BootLoader_CheckNewAppCAN(void)
-{
-	debug_write("send ack 1 \n");
-
-//	CAN1_Transmit(BOOT_NEW_APP_CHECK,1,CAN_ID)	;
-	_delay_ms(6000);
-	uint32_t REC = Can_Read_Queue();
-
-	if (REC == BOOT_NEW_APP_FOUND  )
-	{
-//		CAN1_Transmit(BOOT_NEW_APP_CHECK,1,CAN_ID)	;
-		return true ;
-	}
-	return false ;
-}
-
-void BootLoader_SendResponse(uint8_t  data  )
-{
-//	CAN1_Transmit(data,1,CAN_ID);
-}
-int BOOT_IsCommandAvailble (void)
-{
-//	return Can_GetSize_Queue();
-}
-
 void BOOT_READ_ARRAY (unsigned char* arr, int size)
 {
 	for (int i = 0 ; (i < size)  ; i++)
@@ -83,15 +57,13 @@ void bootloader_send_ack(uint8_t command_code, uint8_t follow_len)
 	uint8_t ack_buf[2];
 	ack_buf[0] = BL_ACK;
 	ack_buf[1] = follow_len;
-//	CAN1_Transmit(*((uint16_t*)ack_buf),2,CAN_ID);
 
 }
 
 void bootloader_send_nack(void)
 {
 	uint8_t nack = BL_NACK;
-//	CAN1_Transmit(nack,1,CAN_ID);
-}
+ }
 
 uint8_t bootloader_verify_crc (uint8_t *pData, uint32_t len, uint32_t crc_host)
 {
@@ -212,36 +184,7 @@ void bootloader_jump_to_user_app(void)
 
 
 
-void bootloader_handle_flash_erase_cmd(uint8_t *pBuffer)
-{
-	debug_write("bootloader_handle_flash_erase_cmd\n");
-
-	uint32_t command_packet_len = pBuffer[0]+1 ;
-
-	uint32_t host_crc = *((uint32_t * ) (pBuffer+command_packet_len - 4) ) ;
-
-	if (! bootloader_verify_crc(&pBuffer[0],command_packet_len-4,host_crc))
-	{
-		debug_write("checksum success !!\n");
-		bootloader_send_ack(pBuffer[0],1);
-		uint8_t erase_status = 0x00;
-
-
-		erase_status = execute_flash_erase(pBuffer[2] , pBuffer[3]);
-
-
-		CAN1_Transmit(erase_status,1,CAN_ID);
-		//		bootloader_uart_write_data(&erase_status,1);
-
-	}else
-	{
-		debug_write("BL_DEBUG_MSG:checksum fail !!\n");
-		bootloader_send_nack();
-	}
-}
-
-
-uint8_t bootloader_handle_mem_write_cmd(uint8_t *pBuffer, uint16_t size )
+uint8_t bootloader_handle_mem_write_cmd(uint8_t *pBuffer, uint16_t command_packet_len )
 {
 
 	uint8_t write_status = 0x00;
@@ -253,33 +196,30 @@ uint8_t bootloader_handle_mem_write_cmd(uint8_t *pBuffer, uint16_t size )
 
 	debug_write("bootloader_handle_mem_write_cmd\n");
 
-	uint32_t command_packet_len = pBuffer[0]+1 ;
 
 
-	uint32_t host_crc = *((uint32_t * ) (pBuffer+command_packet_len - 4) ) ;
+	uint32_t host_crc = *((uint32_t * ) (pBuffer - 4) ) ;
 
 	if (! bootloader_verify_crc(&pBuffer[0],command_packet_len-4,host_crc))
 	{
 		debug_write("checksum success !!\n");
-		bootloader_send_ack(pBuffer[0],1);
+
 		if( verify_address(mem_address) == ADDR_VALID )
 		{
 			debug_write("valid mem write address\n");
-			write_status = execute_mem_write(&pBuffer[7],mem_address, payload_len);
+			write_status = execute_mem_write(&pBuffer ,mem_address, payload_len);
 			BootLoader_SendResponse(write_status);
 		}
 		else
 		{
 			debug_write("invalid mem write address\n");
 			write_status = ADDR_INVALID;
-			BootLoader_SendResponse(write_status );
-		}
+ 		}
 	}
 	else
 	{
 		debug_write("checksum fail !!\n");
-		bootloader_send_nack();
-	}
+ 	}
 
 }
 

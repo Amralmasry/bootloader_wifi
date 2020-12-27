@@ -20,10 +20,6 @@ int main(void)
 	debug_write("***********************************\n");
 	debug_write("Boot Loader check for host\n");
 	BootLoader_Init();
-	/**/
-	// Wifi_init
-	// Wifi join access point
-	// Wifi join server
 
 
 	WIFI_LOCAL_SEND_DATA("BOOTLOADER?");

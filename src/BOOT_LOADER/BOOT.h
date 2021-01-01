@@ -31,10 +31,10 @@ void _Error_Handler(char *, int);
 
 
 /*Bootloader function prototypes */
-
+uint8_t boot_check_host (void);
 void  bootloader_uart_read_data(void);
 void bootloader_jump_to_user_app(void);
-void BootLoader_Init (void);
+uint8_t BootLoader_Init (void);
 uint8_t BootLoader_CheckNewAppBUTTON(void);
 uint8_t BootLoader_CheckNewAppCAN(void);
 int BOOT_IsCommandAvailble (void);
@@ -42,8 +42,6 @@ void BOOT_READ_ARRAY (unsigned char* arr, int size);
  void bootloader_handle_flash_erase_cmd(uint8_t *pBuffer);
  uint8_t bootloader_handle_mem_write_cmd(uint8_t *pBuffer, uint16_t size ) ;
 
-void bootloader_send_ack(uint8_t command_code, uint8_t follow_len);
-void bootloader_send_nack(void);
 
 uint8_t bootloader_verify_crc (uint8_t *pData, uint32_t len,uint32_t crc_host);
  uint8_t verify_address(uint32_t go_address);

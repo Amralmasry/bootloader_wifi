@@ -11,30 +11,40 @@
 #include "../Services_layers/Queue.h"
 #include "../Services_layers/delay.h"
 #include "../Services_layers/Services_layers.h"
-
-#define   CAN_ID   0x25
-uint8_t supported_commands[] = {
-		BL_FLASH_ERASE,
-		BL_MEM_WRITE
-} ;
+#include "../Services_layers/Special_Uart_wifi_local.h"
+#include "../HAL/WIFI_LOCAL.h"
 
 
-
-
-void BootLoader_Init (void)
+uint8_t BootLoader_Init (void)
 {
-
-
-
+	uint8_t RC = 1 ;
+	RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;
+	WIFI_LOCAL_INIT();
+//	RC = WIFI_LOCAL_JAP();
+//	WIFI_START_SERVER();
+	return RC ;
 }
 
-void BOOT_READ_ARRAY (unsigned char* arr, int size)
+uint8_t boot_check_host (void)
 {
-	for (int i = 0 ; (i < size)  ; i++)
+
+
+	uint8_t RC = 0 ;
+	WIFI_LOCAL_SEND_IP((uint8_t *)"BOOTLOADER?",strlen("BOOTLOADER?"));
+	if (WIFI_WAIT_RESPONSE_data(1,"YES"))
 	{
-		arr[i] = Can_Read_Queue();
+		RC=1 ;
+		WIFI_LOCAL_SEND_IP((uint8_t *)"OK",strlen("OK"));
 	}
+
+	else
+	{
+		RC = 0 ;
+	}
+
+	return RC ;
 }
+
 
 uint8_t execute_mem_write(uint8_t *pBuffer, uint32_t mem_address, uint32_t len)
 {
@@ -52,18 +62,7 @@ uint8_t execute_mem_write(uint8_t *pBuffer, uint32_t mem_address, uint32_t len)
 }
 
 
-void bootloader_send_ack(uint8_t command_code, uint8_t follow_len)
-{
-	uint8_t ack_buf[2];
-	ack_buf[0] = BL_ACK;
-	ack_buf[1] = follow_len;
 
-}
-
-void bootloader_send_nack(void)
-{
-	uint8_t nack = BL_NACK;
- }
 
 uint8_t bootloader_verify_crc (uint8_t *pData, uint32_t len, uint32_t crc_host)
 {
@@ -149,6 +148,11 @@ uint8_t execute_flash_erase(uint8_t sector_number , uint8_t number_of_sector)
 
 void system_deinit(void)
 {
+	TIM7->CR1 = 0 ;
+	TIM7->CR1  = 0 ;
+	TIM7->PSC =  0;
+	TIM7->DIER = 0 ;
+	TIM7->ARR = 0 ;
 	TIM6->CR1 = 0 ;
 	TIM6->CR1  = 0 ;
 	TIM6->PSC =  0;
@@ -157,12 +161,19 @@ void system_deinit(void)
 	USART2->CR1= 0;
 	USART2->BRR = 0 ;
 	USART2->CR3 =0;
+	USART1->CR1= 0;
+	USART1->BRR = 0 ;
+	USART1->CR3 =0;
 	GPIOA->AFR[0] &= ~0x0F00;
 	GPIOA->MODER  &= ~0x0030;
+
 	NVIC_DisableIRQ(TIM6_DAC_IRQn);
-	RCC->APB1ENR &=~( (1<<4)|(1<<5));
+	NVIC_DisableIRQ(TIM7_IRQn);
+	NVIC_DisableIRQ(USART1_IRQn);
+
+	RCC->APB2ENR &=~( RCC_APB2ENR_USART1EN );
 	RCC->AHB1ENR &=~0xf;
-	RCC->APB1ENR &=~(1<<17);
+	RCC->APB1ENR &=~(RCC_APB1ENR_TIM6EN | RCC_APB1ENR_TIM7EN| RCC_APB1ENR_USART2EN );
 }
 
 
@@ -180,7 +191,7 @@ void bootloader_jump_to_user_app(void)
 }
 
 
-
+uint32_t mem_address = 0x08008000 ;
 
 
 
@@ -189,38 +200,35 @@ uint8_t bootloader_handle_mem_write_cmd(uint8_t *pBuffer, uint16_t command_packe
 
 	uint8_t write_status = 0x00;
 
-	uint8_t payload_len = pBuffer[6];
+	uint16_t payload_len = command_packet_len-4;
 
-	uint32_t mem_address = *((uint32_t *) ( &pBuffer[2]) );
-
-
-	debug_write("bootloader_handle_mem_write_cmd\n");
+	//debug_write("bootloader_handle_mem_write_cmd\n");
 
 
 
-	uint32_t host_crc = *((uint32_t * ) (pBuffer - 4) ) ;
+	uint32_t host_crc = *((uint32_t * ) (pBuffer+command_packet_len - 4) ) ;
 
-	if (! bootloader_verify_crc(&pBuffer[0],command_packet_len-4,host_crc))
+	if (! bootloader_verify_crc(pBuffer,payload_len,host_crc))
 	{
 		debug_write("checksum success !!\n");
 
 		if( verify_address(mem_address) == ADDR_VALID )
 		{
-			debug_write("valid mem write address\n");
-			write_status = execute_mem_write(&pBuffer ,mem_address, payload_len);
-			BootLoader_SendResponse(write_status);
+
+			write_status = execute_mem_write(pBuffer ,mem_address, payload_len);
+			mem_address+=payload_len ;
 		}
 		else
 		{
 			debug_write("invalid mem write address\n");
-			write_status = ADDR_INVALID;
- 		}
+			write_status = 0;
+		}
 	}
 	else
 	{
-		debug_write("checksum fail !!\n");
- 	}
-
+	//	debug_write("checksum fail !!\n");
+	}
+	return write_status ;
 }
 
 

@@ -31,7 +31,7 @@ void UART_INIT_1(void)
 	USART1->CR1 |= (1<<2);
 	USART1->CR1 |= (1<<3);
 	USART1->CR1 |= (1<<5);
-	USART1->BRR = 0xf|(585<<4);
+	USART1->BRR = 13|(48<<4);
 	NVIC_EnableIRQ(USART1_IRQn);
 	uart1_pin_conf();
 }

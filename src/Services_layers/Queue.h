@@ -8,7 +8,7 @@
 #ifndef SERVICES_LAYERS_QUEUE_H_
 #define SERVICES_LAYERS_QUEUE_H_
 
-#define BUFFER_SIZE 80
+#define BUFFER_SIZE 1000
 #define BUFFER_SIZE_16 40
 #include <stdint.h>
 typedef struct Queue Queue_t;

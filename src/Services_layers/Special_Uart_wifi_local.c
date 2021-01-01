@@ -20,14 +20,14 @@ void SpecialUart_Update_wifi_local(void)
 	{
 		SpecialTimer_Start(SP_UART_WIFI_LOCAL_TIMEOUT);
 	}
-	if(SpecialTimer_Check(SP_UART_WIFI_LOCAL_TIMEOUT , UART_TIMEOUT_READ_LOCAL))
+	if(SpecialTimer_Check(SP_UART_WIFI_LOCAL_TIMEOUT , UART_TIMEOUT_READ_LOCAL/2))
 	{
 		while(queue_wifi_local_get_size())
 		{
-			for(counter = 0 ;queue_wifi_local_get_size()  && counter < 80; counter ++)
+			for(counter = 0 ;queue_wifi_local_get_size()  && counter < ELEMENT_SIZE; counter ++)
 			{
 				data[counter] = queue_wifi_local_data_read();
-				if (data[counter] == '\n')
+				if (!memcmp(&data[counter-1], "\r\n",2) && memcmp(data,"+IPD",4) )
 				{
 					break ;
 				}
@@ -38,7 +38,7 @@ void SpecialUart_Update_wifi_local(void)
 				for ( i = 0 ; i < counter ;i++)
 					if (data[i] == ':')
 						break;
- 				String_Queue_enqueue(&Uart_String_wifi_local_DATA_ONLY, &data[i+1] , 4);
+ 				String_Queue_enqueue(&Uart_String_wifi_local_DATA_ONLY, &data[i+1] ,counter-(i+1));
 			}
 			else
 				String_Queue_enqueue(&Uart_String_wifi_local, data , counter);
